@@ -1,0 +1,1429 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BookBot — لوحة تحكم المكتبة الذكية</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0d0f14;
+  --surface: #13161e;
+  --surface2: #1a1e2a;
+  --border: #252a38;
+  --accent: #f0a500;
+  --accent2: #e05c2a;
+  --green: #22c55e;
+  --red: #ef4444;
+  --blue: #3b82f6;
+  --text: #e8eaf0;
+  --muted: #6b7280;
+  --card: #161b27;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: 'IBM Plex Sans Arabic', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 0;
+}
+
+.sidebar {
+  position: fixed;
+  right: 0;
+  top: 0;
+  width: 260px;
+  height: 100vh;
+  background: var(--surface);
+  border-left: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  z-index: 100;
+}
+
+.logo {
+  padding: 28px 24px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.logo-icon {
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.logo-text .name {
+  font-family: 'Space Mono', monospace;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: 1px;
+  display: block;
+}
+
+.logo-text .tagline {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 2px;
+  display: block;
+}
+
+.nav {
+  flex: 1;
+  padding: 20px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 14px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 14px;
+  color: var(--muted);
+  border: 1px solid transparent;
+  text-decoration: none;
+  background: none;
+  width: 100%;
+  text-align: right;
+  font-family: 'IBM Plex Sans Arabic', sans-serif;
+}
+
+.nav-item:hover { background: var(--surface2); color: var(--text); }
+.nav-item.active {
+  background: rgba(240,165,0,0.12);
+  color: var(--accent);
+  border-color: rgba(240,165,0,0.25);
+}
+
+.nav-section {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--muted);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  padding: 16px 14px 6px;
+}
+
+.badge-count {
+  background: var(--accent2);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 20px;
+  margin-right: auto;
+}
+
+.sidebar-footer {
+  padding: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.store-badge {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  background: var(--surface2);
+  border-radius: 10px;
+  border: 1px solid var(--border);
+}
+
+.store-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.store-name { font-size: 13px; font-weight: 600; color: var(--text); }
+.store-plan { font-size: 11px; color: var(--green); }
+
+.main {
+  margin-right: 260px;
+  min-height: 100vh;
+  padding: 32px;
+  position: relative;
+  z-index: 1;
+}
+
+.agent-status-bar {
+  margin-bottom: 28px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 18px 22px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.agent-pulse {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.pulse-ring {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--green);
+  position: relative;
+  flex-shrink: 0;
+}
+
+.pulse-ring::before {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 2px solid var(--green);
+  animation: pulseAnim 2s ease-out infinite;
+  opacity: 0;
+}
+
+@keyframes pulseAnim {
+  0% { transform: scale(0.8); opacity: 1; }
+  100% { transform: scale(2.2); opacity: 0; }
+}
+
+.agent-name { font-size: 15px; font-weight: 700; }
+.agent-desc { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+.agent-metrics { display: flex; gap: 32px; }
+
+.metric-val {
+  font-family: 'Space Mono', monospace;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.metric-label { font-size: 11px; color: var(--muted); }
+
+.toggle-switch {
+  position: relative;
+  width: 52px;
+  height: 28px;
+  flex-shrink: 0;
+}
+
+.toggle-switch input { display: none; }
+
+.toggle-slider {
+  position: absolute;
+  inset: 0;
+  background: var(--surface2);
+  border-radius: 28px;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  transition: 0.3s;
+}
+
+.toggle-slider::before {
+  content: '';
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--muted);
+  top: 3px;
+  right: 4px;
+  transition: 0.3s;
+}
+
+.toggle-switch input:checked + .toggle-slider {
+  background: rgba(34,197,94,0.2);
+  border-color: var(--green);
+}
+
+.toggle-switch input:checked + .toggle-slider::before {
+  background: var(--green);
+  right: 28px;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 28px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.page-title { font-size: 24px; font-weight: 700; }
+.page-title span { color: var(--accent); }
+.page-subtitle { font-size: 13px; color: var(--muted); margin-top: 4px; }
+
+.topbar-actions { display: flex; gap: 12px; }
+
+.btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+  font-family: 'IBM Plex Sans Arabic', sans-serif;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  color: #000;
+}
+
+.btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(240,165,0,0.3);
+}
+
+.btn-ghost {
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
+.btn-ghost:hover { background: var(--surface2); }
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.stat-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 22px;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.2s, border-color 0.2s;
+  animation: fadeUp 0.4s ease both;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(240,165,0,0.3);
+}
+
+.stat-card:nth-child(1) { animation-delay: 0.05s; }
+.stat-card:nth-child(2) { animation-delay: 0.1s; }
+.stat-card:nth-child(3) { animation-delay: 0.15s; }
+.stat-card:nth-child(4) { animation-delay: 0.2s; }
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0; right: 0;
+  width: 70px; height: 70px;
+  border-radius: 0 0 0 70px;
+  opacity: 0.07;
+}
+
+.stat-card.gold::before { background: var(--accent); }
+.stat-card.orange::before { background: var(--accent2); }
+.stat-card.green::before { background: var(--green); }
+.stat-card.blue::before { background: var(--blue); }
+
+.stat-label { font-size: 12px; color: var(--muted); margin-bottom: 8px; font-weight: 500; }
+.stat-value {
+  font-family: 'Space Mono', monospace;
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.stat-change { font-size: 12px; display: flex; align-items: center; gap: 4px; }
+.stat-change.up { color: var(--green); }
+.stat-change.down { color: var(--red); }
+.stat-icon { position: absolute; top: 20px; left: 20px; font-size: 22px; opacity: 0.4; }
+
+.panels {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 20px;
+}
+
+.panel {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.panel-header {
+  padding: 18px 22px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.panel-title { font-size: 15px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+
+.orders-table { width: 100%; border-collapse: collapse; }
+
+.orders-table th {
+  background: var(--surface2);
+  padding: 12px 20px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+  text-align: right;
+  letter-spacing: 0.5px;
+}
+
+.orders-table td {
+  padding: 14px 20px;
+  font-size: 13px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+
+.orders-table tr:last-child td { border-bottom: none; }
+.orders-table tr:hover td { background: var(--surface2); }
+
+.customer-cell { display: flex; align-items: center; gap: 10px; }
+
+.customer-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  flex-shrink: 0;
+  font-weight: 700;
+}
+
+.customer-name { font-weight: 600; }
+.customer-platform { font-size: 11px; color: var(--muted); margin-top: 1px; }
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.status-badge.pending { background: rgba(240,165,0,0.15); color: var(--accent); }
+.status-badge.confirmed { background: rgba(34,197,94,0.15); color: var(--green); }
+.status-badge.cancelled { background: rgba(239,68,68,0.15); color: var(--red); }
+.status-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+
+.action-btn {
+  padding: 5px 12px;
+  border-radius: 7px;
+  font-size: 11px;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  font-family: 'IBM Plex Sans Arabic', sans-serif;
+  transition: all 0.2s;
+}
+
+.action-btn.confirm {
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  color: #000;
+}
+
+.action-btn.done {
+  background: rgba(34,197,94,0.15);
+  color: var(--green);
+}
+
+.action-btn.view {
+  background: var(--surface2);
+  color: var(--muted);
+  border: 1px solid var(--border);
+}
+
+.right-col { display: flex; flex-direction: column; gap: 20px; }
+
+.connect-section { padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+
+.connect-card {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transition: all 0.2s;
+  cursor: pointer;
+  background: var(--surface2);
+}
+
+.connect-card:hover { border-color: rgba(240,165,0,0.3); }
+.connect-card.connected { border-color: rgba(34,197,94,0.3); background: rgba(34,197,94,0.04); }
+
+.platform-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.platform-icon.fb { background: linear-gradient(135deg, #1877f2, #0d5db8); }
+.platform-icon.ig { background: linear-gradient(135deg, #f09433, #dc2743, #bc1888); }
+.platform-icon.tg { background: linear-gradient(135deg, #26a5e4, #1d8cc4); }
+.platform-icon.wa { background: linear-gradient(135deg, #25d366, #1da851); }
+
+.platform-info { flex: 1; }
+.platform-name { font-size: 13px; font-weight: 700; }
+.platform-status { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.platform-status.ok { color: var(--green); }
+
+.connect-btn {
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  font-family: 'IBM Plex Sans Arabic', sans-serif;
+  transition: all 0.2s;
+}
+
+.connect-btn.do-connect {
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  color: #000;
+}
+
+.connect-btn.is-connected {
+  background: rgba(34,197,94,0.15);
+  color: var(--green);
+}
+
+.activity-item {
+  display: flex;
+  gap: 12px;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border);
+  align-items: flex-start;
+}
+
+.activity-item:last-child { border-bottom: none; }
+.activity-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 5px; }
+.activity-text { font-size: 13px; }
+.activity-time { font-size: 11px; color: var(--muted); margin-top: 3px; }
+
+/* MODAL */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.7);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s;
+}
+
+.modal-overlay.show { opacity: 1; pointer-events: all; }
+
+.modal {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  width: 520px;
+  max-width: 95vw;
+  transform: translateY(20px) scale(0.97);
+  transition: transform 0.3s;
+  overflow: hidden;
+}
+
+.modal-overlay.show .modal { transform: translateY(0) scale(1); }
+
+.modal-header {
+  padding: 22px 26px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.modal-title { font-size: 17px; font-weight: 700; display: flex; align-items: center; gap: 10px; }
+
+.modal-close {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  transition: all 0.2s;
+  line-height: 1;
+}
+
+.modal-close:hover { color: var(--text); }
+.modal-body { padding: 26px; }
+
+.step-indicator { display: flex; gap: 8px; margin-bottom: 24px; }
+.step { flex: 1; height: 4px; border-radius: 4px; background: var(--surface2); transition: background 0.3s; }
+.step.done { background: var(--accent); }
+.step.active { background: var(--accent); opacity: 0.5; }
+
+.platform-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+.platform-option {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: var(--surface2);
+  font-size: 13px;
+  font-weight: 700;
+  font-family: 'IBM Plex Sans Arabic', sans-serif;
+  color: var(--text);
+}
+
+.platform-option:hover { border-color: rgba(240,165,0,0.4); }
+.platform-option.selected { border-color: var(--accent); background: rgba(240,165,0,0.08); }
+
+.platform-option .platform-icon { width: 50px; height: 50px; font-size: 24px; }
+
+.field-group { margin-bottom: 16px; }
+.field-label { font-size: 12px; font-weight: 700; color: var(--muted); margin-bottom: 7px; display: block; letter-spacing: 0.5px; }
+
+.field-input {
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 11px 14px;
+  font-size: 14px;
+  color: var(--text);
+  font-family: 'IBM Plex Sans Arabic', sans-serif;
+  transition: border-color 0.2s;
+  outline: none;
+}
+
+.field-input:focus { border-color: var(--accent); }
+.field-hint { font-size: 11px; color: var(--muted); margin-top: 5px; }
+
+.modal-footer {
+  padding: 18px 26px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+/* TOAST */
+.toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(80px);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 13px 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  z-index: 9999;
+  transition: transform 0.4s cubic-bezier(0.34,1.56,0.64,1);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  white-space: nowrap;
+}
+
+.toast.show { transform: translateX(-50%) translateY(0); }
+
+.required-badge {
+  font-size: 10px;
+  background: rgba(239,68,68,0.15);
+  color: var(--red);
+  border: 1px solid rgba(239,68,68,0.3);
+  padding: 1px 7px;
+  border-radius: 20px;
+  margin-right: 6px;
+  font-weight: 700;
+}
+
+.required-card {
+  border-color: rgba(239,68,68,0.25) !important;
+}
+.required-card:hover { border-color: rgba(239,68,68,0.5) !important; }
+
+.style-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 16px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.style-option:hover { border-color: rgba(240,165,0,0.4); }
+.style-option.selected {
+  border-color: var(--accent);
+  background: rgba(240,165,0,0.1);
+}
+
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="logo">
+    <div class="logo-icon">📚</div>
+    <div class="logo-text">
+      <span class="name">BOOKBOT</span>
+      <span class="tagline">وكيل المكتبة الذكي</span>
+    </div>
+  </div>
+
+  <nav class="nav">
+    <div class="nav-section">الرئيسية</div>
+    <button class="nav-item active" onclick="navClick(this,'dashboard')">
+      <span>🏠</span> لوحة التحكم
+    </button>
+    <button class="nav-item" onclick="navClick(this,'orders')">
+      <span>📦</span> الطلبيات
+      <span class="badge-count">7</span>
+    </button>
+
+    <div class="nav-section">الإعدادات</div>
+    <button class="nav-item" onclick="navClick(this,'connect')">
+      <span>🔗</span> ربط المنصات
+    </button>
+    <button class="nav-item" onclick="navClick(this,'agent')">
+      <span>🤖</span> إعدادات الوكيل
+    </button>
+    <button class="nav-item" onclick="navClick(this,'books')">
+      <span>📖</span> قائمة الكتب
+    </button>
+    <button class="nav-item" onclick="navClick(this,'settings')">
+      <span>⚙️</span> الإعدادات
+    </button>
+  </nav>
+
+  <div class="sidebar-footer">
+    <div class="store-badge">
+      <div class="store-avatar">🏪</div>
+      <div>
+        <div class="store-name">مكتبة النور</div>
+        <div class="store-plan">✦ الخطة المحترفة</div>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main class="main">
+
+  <!-- AGENT STATUS -->
+  <div class="agent-status-bar">
+    <div class="agent-pulse">
+      <div class="pulse-ring"></div>
+      <div>
+        <div class="agent-name">BookBot AI — يعمل الآن</div>
+        <div class="agent-desc">يرد على الرسائل تلقائياً عبر Facebook Messenger</div>
+      </div>
+    </div>
+    <div class="agent-metrics">
+      <div>
+        <div class="metric-val">98%</div>
+        <div class="metric-label">دقة الردود</div>
+      </div>
+      <div>
+        <div class="metric-val">1.2s</div>
+        <div class="metric-label">متوسط الرد</div>
+      </div>
+      <div>
+        <div class="metric-val">142</div>
+        <div class="metric-label">رسالة اليوم</div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <span style="font-size:13px;color:var(--muted);">الوكيل</span>
+      <label class="toggle-switch">
+        <input type="checkbox" checked id="agent-toggle" onchange="toggleAgent(this)">
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+  </div>
+
+  <!-- TOP BAR -->
+  <div class="topbar">
+    <div>
+      <div class="page-title">لوحة <span>التحكم</span></div>
+      <div class="page-subtitle">الأربعاء، 18 مارس 2026</div>
+    </div>
+    <div class="topbar-actions">
+      <button class="btn btn-ghost" onclick="openModal('connect-modal')">🔗 ربط منصة</button>
+      <button class="btn btn-primary" onclick="openModal('book-modal')">＋ إضافة كتاب</button>
+    </div>
+  </div>
+
+  <!-- STATS -->
+  <div class="stats-grid">
+    <div class="stat-card gold">
+      <span class="stat-icon">📦</span>
+      <div class="stat-label">الطلبيات اليوم</div>
+      <div class="stat-value">24</div>
+      <div class="stat-change up">↑ 18% عن أمس</div>
+    </div>
+    <div class="stat-card orange">
+      <span class="stat-icon">💬</span>
+      <div class="stat-label">محادثات نشطة</div>
+      <div class="stat-value">7</div>
+      <div class="stat-change up">↑ 3 جديدة</div>
+    </div>
+    <div class="stat-card green">
+      <span class="stat-icon">✅</span>
+      <div class="stat-label">طلبيات مؤكدة</div>
+      <div class="stat-value">19</div>
+      <div class="stat-change up">↑ 79% معدل التحويل</div>
+    </div>
+    <div class="stat-card blue">
+      <span class="stat-icon">📚</span>
+      <div class="stat-label">كتب في المخزون</div>
+      <div class="stat-value">348</div>
+      <div class="stat-change down">↓ 12 نفذت</div>
+    </div>
+  </div>
+
+  <!-- PANELS -->
+  <div class="panels">
+
+    <!-- ORDERS TABLE -->
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title">📦 آخر الطلبيات</div>
+        <button class="btn btn-ghost" style="padding:7px 14px;font-size:12px;">عرض الكل</button>
+      </div>
+      <table class="orders-table">
+        <thead>
+          <tr>
+            <th>العميل</th>
+            <th>الكتاب</th>
+            <th>السعر</th>
+            <th>الحالة</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="orders-body">
+          <tr>
+            <td>
+              <div class="customer-cell">
+                <div class="customer-avatar">أح</div>
+                <div>
+                  <div class="customer-name">أحمد بن علي</div>
+                  <div class="customer-platform">📘 Messenger</div>
+                </div>
+              </div>
+            </td>
+            <td>رواية: العلّامة</td>
+            <td style="font-family:'Space Mono',monospace;color:var(--accent);">450 دج</td>
+            <td><span class="status-badge pending"><span class="status-dot"></span>في الانتظار</span></td>
+            <td><button class="action-btn confirm" onclick="confirmOrder(this)">تأكيد</button></td>
+          </tr>
+          <tr>
+            <td>
+              <div class="customer-cell">
+                <div class="customer-avatar" style="background:linear-gradient(135deg,#f09433,#dc2743);">فا</div>
+                <div>
+                  <div class="customer-name">فاطمة خليل</div>
+                  <div class="customer-platform">📷 Instagram</div>
+                </div>
+              </div>
+            </td>
+            <td>من أنا</td>
+            <td style="font-family:'Space Mono',monospace;color:var(--accent);">320 دج</td>
+            <td><span class="status-badge confirmed"><span class="status-dot"></span>مؤكدة</span></td>
+            <td><button class="action-btn done">✓ تم</button></td>
+          </tr>
+          <tr>
+            <td>
+              <div class="customer-cell">
+                <div class="customer-avatar" style="background:linear-gradient(135deg,#22c55e,#16a34a);">يو</div>
+                <div>
+                  <div class="customer-name">يوسف مالكي</div>
+                  <div class="customer-platform">📘 Messenger</div>
+                </div>
+              </div>
+            </td>
+            <td>موسوعة التاريخ</td>
+            <td style="font-family:'Space Mono',monospace;color:var(--accent);">890 دج</td>
+            <td><span class="status-badge pending"><span class="status-dot"></span>في الانتظار</span></td>
+            <td><button class="action-btn confirm" onclick="confirmOrder(this)">تأكيد</button></td>
+          </tr>
+          <tr>
+            <td>
+              <div class="customer-cell">
+                <div class="customer-avatar" style="background:linear-gradient(135deg,#ef4444,#dc2626);">سا</div>
+                <div>
+                  <div class="customer-name">سارة حداد</div>
+                  <div class="customer-platform">📷 Instagram</div>
+                </div>
+              </div>
+            </td>
+            <td>الجريمة والعقاب</td>
+            <td style="font-family:'Space Mono',monospace;color:var(--accent);">650 دج</td>
+            <td><span class="status-badge cancelled"><span class="status-dot"></span>ملغاة</span></td>
+            <td><button class="action-btn view">عرض</button></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- RIGHT COL -->
+    <div class="right-col">
+
+      <!-- PLATFORMS -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">🔗 المنصات المربوطة</div>
+        </div>
+        <div class="connect-section" id="platforms-list">
+          <div class="connect-card connected">
+            <div class="platform-icon fb">📘</div>
+            <div class="platform-info">
+              <div class="platform-name">Facebook</div>
+              <div class="platform-status ok">✓ متصل — مكتبة النور</div>
+            </div>
+            <button class="connect-btn is-connected">متصل</button>
+          </div>
+          <div class="connect-card" onclick="openModal('connect-modal'); setModalPlat('Instagram')">
+            <div class="platform-icon ig">📷</div>
+            <div class="platform-info">
+              <div class="platform-name">Instagram</div>
+              <div class="platform-status">غير مربوط</div>
+            </div>
+            <button class="connect-btn do-connect">ربط</button>
+          </div>
+          <div class="connect-card required-card" onclick="openTelegramModal()">
+            <div class="platform-icon tg">✈️</div>
+            <div class="platform-info">
+              <div class="platform-name">Telegram <span class="required-badge">إلزامي</span></div>
+              <div class="platform-status" style="color:var(--red);">⚠ مطلوب للإشعارات</div>
+            </div>
+            <button class="connect-btn do-connect" style="background:rgba(239,68,68,0.15);color:var(--red);border:1px solid rgba(239,68,68,0.3);">ربط الآن</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ACTIVITY -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">⚡ النشاط الأخير</div>
+        </div>
+        <div>
+          <div class="activity-item">
+            <div class="activity-dot" style="background:var(--green)"></div>
+            <div>
+              <div class="activity-text">طلبية جديدة من أحمد بن علي عبر Messenger</div>
+              <div class="activity-time">منذ 3 دقائق</div>
+            </div>
+          </div>
+          <div class="activity-item">
+            <div class="activity-dot" style="background:var(--accent)"></div>
+            <div>
+              <div class="activity-text">الوكيل أجاب على سؤال عن توفر "رواية الأجنحة"</div>
+              <div class="activity-time">منذ 8 دقائق</div>
+            </div>
+          </div>
+          <div class="activity-item">
+            <div class="activity-dot" style="background:var(--blue)"></div>
+            <div>
+              <div class="activity-text">تم تأكيد طلبية فاطمة خليل وإرسال إشعار</div>
+              <div class="activity-time">منذ 15 دقيقة</div>
+            </div>
+          </div>
+          <div class="activity-item">
+            <div class="activity-dot" style="background:var(--red)"></div>
+            <div>
+              <div class="activity-text">كتاب "الجريمة والعقاب" أوشك على النفاد (2 نسخ)</div>
+              <div class="activity-time">منذ 32 دقيقة</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</main>
+
+<!-- MODAL: TELEGRAM (REQUIRED) -->
+<div class="modal-overlay" id="telegram-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div class="platform-icon tg" style="width:32px;height:32px;font-size:16px;">✈️</div>
+        <div>
+          <div class="modal-title">ربط Telegram — إلزامي</div>
+          <div style="font-size:11px;color:var(--red);margin-top:2px;">⚠ مطلوب لاستقبال إشعارات الأخطاء والتنبيهات</div>
+        </div>
+      </div>
+      <button class="modal-close" onclick="closeModal('telegram-modal')">×</button>
+    </div>
+    <div class="modal-body">
+      <div style="display:flex;align-items:flex-start;gap:10px;padding:12px 14px;background:rgba(239,68,68,0.07);border:1px solid rgba(239,68,68,0.2);border-radius:10px;margin-bottom:20px;">
+        <span style="font-size:18px;flex-shrink:0;">🔔</span>
+        <div style="font-size:12px;color:var(--muted);line-height:1.7;">
+          يستخدم الوكيل Telegram لإرسال إشعارات فورية إليك في حال وجود أي مشكل تقني، طلبية معلّقة، أو كتاب غير متوفر. <strong style="color:var(--text);">هذا الربط ضروري لضمان عمل الوكيل بشكل صحيح.</strong>
+        </div>
+      </div>
+
+      <div class="field-group">
+        <label class="field-label">Chat ID الخاص بك على Telegram</label>
+        <input class="field-input" id="tg-chat-id" placeholder="مثال: 123456789" style="direction:ltr;text-align:left;">
+        <div class="field-hint">
+          أرسل <strong>/start</strong> إلى البوت <a href="https://t.me/userinfobot" target="_blank" style="color:var(--accent);text-decoration:none;">@userinfobot</a> للحصول على الـ Chat ID
+        </div>
+      </div>
+
+      <div class="field-group">
+        <label class="field-label">Bot Token (من @BotFather)</label>
+        <input class="field-input" id="tg-token" type="password" placeholder="1234567890:AAFxxxxxxxxxxxxxxxxxxxxxxxxxx" style="direction:ltr;text-align:left;">
+        <div class="field-hint">أنشئ بوتاً جديداً عبر <strong>@BotFather</strong> على Telegram واحصل على الـ Token</div>
+      </div>
+
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px;margin-top:4px;">
+        <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:10px;">📋 خطوات سريعة:</div>
+        <div style="font-size:12px;color:var(--muted);line-height:2;">
+          <div>① افتح Telegram وابحث عن <span style="color:var(--accent);font-weight:600;">@BotFather</span></div>
+          <div>② أرسل <span style="color:var(--accent);font-weight:600;">/newbot</span> واختر اسماً للبوت</div>
+          <div>③ انسخ الـ Token وضعه في الحقل أعلاه</div>
+          <div>④ ابحث عن <span style="color:var(--accent);font-weight:600;">@userinfobot</span> واحصل على Chat ID</div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('telegram-modal')">لاحقاً</button>
+      <button class="btn btn-primary" onclick="saveTelegram()">✈️ ربط Telegram</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: CONNECT PLATFORM -->
+<div class="modal-overlay" id="connect-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">🔗 ربط منصة جديدة</div>
+      <button class="modal-close" onclick="closeModal('connect-modal')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="step-indicator">
+        <div class="step done"></div>
+        <div class="step active" id="c-step2"></div>
+        <div class="step" id="c-step3"></div>
+      </div>
+
+      <div id="cs1">
+        <p style="font-size:14px;font-weight:700;margin-bottom:4px;">اختر المنصة</p>
+        <p style="font-size:13px;color:var(--muted);margin-bottom:16px;">اختر المنصة التي تريد ربطها بالوكيل الذكي</p>
+        <div class="platform-grid">
+          <button class="platform-option" onclick="selectPlat(this,'Facebook')">
+            <div class="platform-icon fb">📘</div>
+            Facebook
+          </button>
+          <button class="platform-option" onclick="selectPlat(this,'Instagram')">
+            <div class="platform-icon ig">📷</div>
+            Instagram
+          </button>
+          <button class="platform-option tg-required" onclick="selectPlat(this,'Telegram')" id="tg-option">
+            <div class="platform-icon tg">✈️</div>
+            Telegram
+            <span style="font-size:9px;background:rgba(239,68,68,0.2);color:var(--red);padding:2px 6px;border-radius:8px;margin-top:4px;display:block;">إلزامي</span>
+          </button>
+        </div>
+      </div>
+
+      <div id="cs2" style="display:none;">
+        <p style="font-size:14px;font-weight:700;margin-bottom:4px;">بيانات الحساب</p>
+        <p style="font-size:13px;color:var(--muted);margin-bottom:16px;">أدخل بيانات حساب <span id="cs2-plat-name"></span> لربطه بالوكيل تلقائياً</p>
+        <div class="field-group">
+          <label class="field-label">البريد الإلكتروني أو رقم الهاتف</label>
+          <input class="field-input" id="wh-email" placeholder="email@example.com أو 0555xxxxxx" style="direction:ltr;text-align:left;">
+          <div class="field-hint">أدخل البريد الإلكتروني أو رقم الهاتف المرتبط بالحساب</div>
+        </div>
+        <div class="field-group">
+          <label class="field-label">كلمة المرور</label>
+          <input class="field-input" id="wh-pass" type="password" placeholder="••••••••••">
+          <div class="field-hint">بياناتك محمية ومشفّرة ولا تُخزَّن على خوادمنا</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;padding:10px 14px;background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.2);border-radius:8px;margin-top:4px;">
+          <span style="font-size:16px;">🔒</span>
+          <span style="font-size:12px;color:var(--muted);">الاتصال آمن ومشفّر — لن يتم مشاركة بياناتك مع أي طرف ثالث</span>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('connect-modal')">إلغاء</button>
+      <button class="btn btn-primary" id="c-next-btn" onclick="connectNext()">التالي ←</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: ADD BOOK -->
+<div class="modal-overlay" id="book-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">📖 إضافة كتاب جديد</div>
+      <button class="modal-close" onclick="closeModal('book-modal')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="field-group">
+        <label class="field-label">عنوان الكتاب</label>
+        <input class="field-input" id="b-title" placeholder="أدخل عنوان الكتاب">
+      </div>
+      <div class="field-group">
+        <label class="field-label">المؤلف</label>
+        <input class="field-input" id="b-author" placeholder="اسم المؤلف">
+      </div>
+      <div class="field-group">
+        <label class="field-label">السعر (دج)</label>
+        <input class="field-input" id="b-price" type="number" placeholder="0" style="direction:ltr;text-align:left;">
+      </div>
+      <div class="field-group">
+        <label class="field-label">النوع</label>
+        <select class="field-input" id="b-type">
+          <option value="رواية">📗 رواية</option>
+          <option value="كتاب">📘 كتاب (غير روائي)</option>
+          <option value="قصص">📙 قصص قصيرة</option>
+          <option value="شعر">📜 شعر</option>
+          <option value="علمي">🔬 علمي / تقني</option>
+          <option value="ديني">☪️ ديني</option>
+          <option value="أطفال">🧸 كتاب أطفال</option>
+        </select>
+      </div>
+      <div class="field-group">
+        <label class="field-label">الكمية المتوفرة</label>
+        <input class="field-input" id="b-qty" type="number" placeholder="1" min="1" style="direction:ltr;text-align:left;">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('book-modal')">إلغاء</button>
+      <button class="btn btn-primary" onclick="addBook()">📚 إضافة إلى المخزون</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: AGENT SETTINGS -->
+<div class="modal-overlay" id="agent-modal">
+  <div class="modal" style="width:580px;max-width:96vw;">
+    <div class="modal-header">
+      <div class="modal-title">🤖 إعدادات الوكيل الذكي</div>
+      <button class="modal-close" onclick="closeModal('agent-modal')">×</button>
+    </div>
+    <div class="modal-body" style="max-height:72vh;overflow-y:auto;">
+
+      <div style="margin-bottom:20px;">
+        <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:12px;display:flex;align-items:center;gap:6px;">
+          <span>💬</span> أسلوب الرد
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
+          <label class="style-option selected" onclick="selectStyle(this,'رسمي')">
+            <input type="radio" name="reply-style" value="رسمي" checked style="display:none;">
+            <span style="font-size:20px;">🎩</span>
+            <div style="font-size:13px;font-weight:700;margin-top:6px;">رسمي</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:2px;">ردود احترافية ومهذبة</div>
+          </label>
+          <label class="style-option" onclick="selectStyle(this,'ودّي')">
+            <input type="radio" name="reply-style" value="ودّي" style="display:none;">
+            <span style="font-size:20px;">😊</span>
+            <div style="font-size:13px;font-weight:700;margin-top:6px;">ودّي</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:2px;">أسلوب حميمي ومرح</div>
+          </label>
+          <label class="style-option" onclick="selectStyle(this,'مختصر')">
+            <input type="radio" name="reply-style" value="مختصر" style="display:none;">
+            <span style="font-size:20px;">⚡</span>
+            <div style="font-size:13px;font-weight:700;margin-top:6px;">مختصر وسريع</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:2px;">ردود قصيرة ومباشرة</div>
+          </label>
+          <label class="style-option" onclick="selectStyle(this,'مخصص')">
+            <input type="radio" name="reply-style" value="مخصص" style="display:none;">
+            <span style="font-size:20px;">✏️</span>
+            <div style="font-size:13px;font-weight:700;margin-top:6px;">مخصص</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:2px;">اكتب تعليماتك بنفسك</div>
+          </label>
+        </div>
+
+        <div id="custom-prompt-box" style="display:none;">
+          <div class="field-group">
+            <label class="field-label">تعليمات الرد المخصصة</label>
+            <textarea class="field-input" id="custom-prompt" rows="4" style="resize:vertical;" placeholder="مثال: رد دائماً بالعربية الفصحى، استخدم لغة تجارية، لا تذكر أسعار المنافسين..."></textarea>
+            <div class="field-hint">ستُضاف هذه التعليمات مباشرة إلى System Prompt الخاص بالوكيل</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="border-top:1px solid var(--border);padding-top:18px;margin-bottom:20px;">
+        <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:12px;display:flex;align-items:center;gap:6px;">
+          <span>🌍</span> لغة الرد
+        </div>
+        <select class="field-input" id="reply-lang">
+          <option value="ar">🇩🇿 العربية (الدارجة الجزائرية)</option>
+          <option value="ar-fus">🌙 العربية الفصحى</option>
+          <option value="fr">🇫🇷 الفرنسية</option>
+          <option value="auto">🔄 تلقائي (حسب لغة العميل)</option>
+        </select>
+      </div>
+
+      <div style="border-top:1px solid var(--border);padding-top:18px;margin-bottom:20px;">
+        <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:12px;display:flex;align-items:center;gap:6px;">
+          <span>📋</span> رسالة الترحيب
+        </div>
+        <textarea class="field-input" id="welcome-msg" rows="3" style="resize:vertical;">مرحباً! 📚 أنا مساعد المكتبة. يمكنني مساعدتك في البحث عن الكتب وتسجيل طلبيتك. كيف أخدمك؟</textarea>
+        <div class="field-hint">تُرسَل تلقائياً لكل عميل جديد يتواصل مع المكتبة</div>
+      </div>
+
+      <div style="border-top:1px solid var(--border);padding-top:18px;">
+        <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:12px;display:flex;align-items:center;gap:6px;">
+          <span>🚫</span> ردود غير المتاحة
+        </div>
+        <textarea class="field-input" id="unavailable-msg" rows="2" style="resize:vertical;">عذراً، هذا الكتاب غير متوفر حالياً. يمكنني اقتراح كتاب مشابه أو إضافتك لقائمة الانتظار.</textarea>
+        <div class="field-hint">الرد الذي يرسله الوكيل حين يكون الكتاب غير متوفر</div>
+      </div>
+
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('agent-modal')">إلغاء</button>
+      <button class="btn btn-primary" onclick="saveAgentSettings()">💾 حفظ الإعدادات</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast">
+  <span id="toast-icon">✅</span>
+  <span id="toast-msg">تم بنجاح</span>
+</div>
+
+<script>
+let connectStep = 1;
+let selectedPlat = '';
+
+function openModal(id) {
+  document.getElementById(id).classList.add('show');
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.remove('show');
+  if (id === 'connect-modal') {
+    connectStep = 1;
+    selectedPlat = '';
+    document.getElementById('cs1').style.display = 'block';
+    document.getElementById('cs2').style.display = 'none';
+    document.getElementById('c-next-btn').textContent = 'التالي ←';
+    document.getElementById('c-step2').classList.remove('done');
+    document.getElementById('c-step3').classList.remove('active', 'done');
+    document.querySelectorAll('.platform-option').forEach(o => o.classList.remove('selected'));
+  }
+}
+
+function openTelegramModal() {
+  openModal('telegram-modal');
+}
+
+function setModalPlat(name) {
+  selectedPlat = name;
+  setTimeout(() => {
+    const opts = document.querySelectorAll('.platform-option');
+    opts.forEach(o => {
+      if (o.textContent.includes(name)) o.classList.add('selected');
+    });
+  }, 50);
+}
+
+function saveTelegram() {
+  const chatId = document.getElementById('tg-chat-id').value.trim();
+  const token  = document.getElementById('tg-token').value.trim();
+  if (!chatId) { showToast('أدخل Chat ID الخاص بك', '⚠️'); return; }
+  if (!token)  { showToast('أدخل Bot Token', '⚠️'); return; }
+  closeModal('telegram-modal');
+  // Update card in sidebar
+  const tgCard = document.querySelector('.required-card');
+  if (tgCard) {
+    tgCard.classList.add('connected');
+    tgCard.classList.remove('required-card');
+    tgCard.querySelector('.platform-status').style.color = '';
+    tgCard.querySelector('.platform-status').innerHTML = '✓ متصل — إشعارات مفعّلة';
+    tgCard.querySelector('.platform-name').innerHTML = 'Telegram <span class="required-badge" style="background:rgba(34,197,94,0.15);color:var(--green);border-color:rgba(34,197,94,0.3);">متصل</span>';
+    const btn = tgCard.querySelector('.connect-btn');
+    btn.className = 'connect-btn is-connected';
+    btn.textContent = 'متصل';
+    btn.style = '';
+  }
+  showToast('تم ربط Telegram بنجاح! ستصلك إشعارات فورية ✈️', '✅');
+}
+
+function selectPlat(el, name) {
+  document.querySelectorAll('.platform-option').forEach(o => o.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedPlat = name;
+}
+
+function connectNext() {
+  if (connectStep === 1) {
+    if (!selectedPlat) { showToast('اختر منصة أولاً', '⚠️'); return; }
+    document.getElementById('cs1').style.display = 'none';
+    document.getElementById('cs2').style.display = 'block';
+    document.getElementById('cs2-plat-name').textContent = selectedPlat;
+    document.getElementById('c-step2').classList.add('done');
+    document.getElementById('c-step3').classList.add('active');
+    document.getElementById('c-next-btn').textContent = 'ربط الآن ✓';
+    connectStep = 2;
+  } else {
+    const email = document.getElementById('wh-email').value.trim();
+    const pass  = document.getElementById('wh-pass').value.trim();
+    if (!email) { showToast('أدخل البريد الإلكتروني أو رقم الهاتف', '⚠️'); return; }
+    if (!pass)  { showToast('أدخل كلمة المرور', '⚠️'); return; }
+    closeModal('connect-modal');
+    showToast('تم ربط ' + selectedPlat + ' بنجاح! 🎉', '✅');
+  }
+}
+
+function addBook() {
+  const title  = document.getElementById('b-title').value.trim();
+  const author = document.getElementById('b-author').value.trim();
+  const price  = document.getElementById('b-price').value;
+  const type   = document.getElementById('b-type').value;
+  const qty    = document.getElementById('b-qty').value || '1';
+  if (!title || !author) { showToast('أدخل عنوان الكتاب واسم المؤلف', '⚠️'); return; }
+  closeModal('book-modal');
+  showToast('تمت إضافة "' + title + '" إلى المخزون 📚', '✅');
+  document.getElementById('b-title').value  = '';
+  document.getElementById('b-author').value = '';
+  document.getElementById('b-price').value  = '';
+  document.getElementById('b-qty').value    = '';
+}
+
+function confirmOrder(btn) {
+  const row = btn.closest('tr');
+  const badge = row.querySelector('.status-badge');
+  badge.className = 'status-badge confirmed';
+  badge.innerHTML = '<span class="status-dot"></span>مؤكدة';
+  btn.className = 'action-btn done';
+  btn.textContent = '✓ تم';
+  btn.onclick = null;
+  showToast('تم تأكيد الطلبية وإشعار العميل', '✅');
+}
+
+function navClick(el, page) {
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  el.classList.add('active');
+  if (page === 'agent') {
+    openModal('agent-modal');
+  } else if (page !== 'dashboard') {
+    showToast('قيد التطوير — سيتوفر قريباً 🔧', '🔧');
+  }
+}
+
+function selectStyle(el, val) {
+  document.querySelectorAll('.style-option').forEach(o => o.classList.remove('selected'));
+  el.classList.add('selected');
+  document.getElementById('custom-prompt-box').style.display = (val === 'مخصص') ? 'block' : 'none';
+}
+
+function saveAgentSettings() {
+  closeModal('agent-modal');
+  showToast('تم حفظ إعدادات الوكيل بنجاح ✔', '✅');
+}
+
+function toggleAgent(checkbox) {
+  if (checkbox.checked) {
+    showToast('تم تشغيل الوكيل الذكي', '🤖');
+  } else {
+    showToast('تم إيقاف الوكيل الذكي', '⏸️');
+  }
+}
+
+function showToast(msg, icon) {
+  const t = document.getElementById('toast');
+  document.getElementById('toast-msg').textContent = msg;
+  document.getElementById('toast-icon').textContent = icon;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+document.querySelectorAll('.modal-overlay').forEach(o => {
+  o.addEventListener('click', function(e) {
+    if (e.target === this) this.classList.remove('show');
+  });
+});
+</script>
+</body>
+</html>
